@@ -13,6 +13,7 @@ import os
 import matplotlib.pyplot as plt
 import cv2
 import ffmpeg
+import librosa
 
 OTHER_SPECIFIC_VOICE = None
 
@@ -20,6 +21,12 @@ class Vis():
 
     def __init__(self, fls, filename, audio_filenam=None, fps=100, frames=1000):
 
+        a_len = librosa.get_duration(filename=audio_filenam)
+        print(f'audio duration: {a_len}')
+        frames = len(fls)
+        print(f'frames: {len(fls)}')
+        fps = len(fls) / a_len
+        print(f'fps: {fps}')
         # from scipy.signal import savgol_filter
         # fls = savgol_filter(fls, 21, 3, axis=0)
 
@@ -47,17 +54,17 @@ class Vis():
             writer.write(frame)
         writer.release()
 
-        if(audio_filenam is not None):
+        if audio_filenam is not None:
             print(audio_filenam)
-            os.system('ffmpeg -y -i {} -i {} -strict -2 -shortest {}'.format(
+            os.system('ffmpeg -loglevel quiet -y -i {} -i {} -strict -2 -shortest {}'.format(
                 os.path.join('examples', 'tmp.mp4'),
                 audio_filenam,
-                os.path.join('examples', '{}_av.mp4'.format(filename))
+                os.path.join('output_av', '{}_av.mp4'.format(filename))
             ))
         else:
-            os.system('ffmpeg -y -i {} {}'.format(
+            os.system('ffmpeg -loglevel quiet -y -i {} {}'.format(
                 os.path.join('examples', 'tmp.mp4'),
-                os.path.join('examples', '{}_av.mp4'.format(filename))
+                os.path.join('output_av', '{}_av.mp4'.format(filename))
             ))
 
         os.remove(os.path.join('examples', 'tmp.mp4'))

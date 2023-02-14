@@ -31,7 +31,7 @@ class Audio2landmark_model():
         # Step 1 : load opt_parser
         self.opt_parser = opt_parser
         self.std_face_id = np.loadtxt('src/dataset/utils/STD_FACE_LANDMARKS.txt')
-        if(jpg_shape is not None):
+        if jpg_shape is not None:
             self.std_face_id = jpg_shape
         self.std_face_id = self.std_face_id.reshape(1, 204)
         self.std_face_id = torch.tensor(self.std_face_id, requires_grad=False, dtype=torch.float).to(device)
@@ -148,27 +148,29 @@ class Audio2landmark_model():
         return baseline_pred_fls
 
     def __train_pass__(self, au_emb=None, centerize_face=False, no_y_rotation=False, vis_fls=False):
-
+        print("Step 1: init setup")
         # Step 1: init setup
         self.G.eval()
         self.C.eval()
         data = self.eval_data
         dataloader = self.eval_dataloader
 
+        print("Step 2: train for each batch")
         # Step 2: train for each batch
+        print(len(dataloader))
         for i, batch in enumerate(dataloader):
 
             global_id, video_name = data[i][0][1][0], data[i][0][1][1][:-4]
-
+            print("Step 2.1: load batch data from dataloader (in segments)")
             # Step 2.1: load batch data from dataloader (in segments)
             inputs_fl, inputs_au, inputs_emb = batch
 
             keys = self.opt_parser.reuse_train_emb_list
-            if(len(keys) == 0):
+            if len(keys) == 0:
                 keys = ['audio_embed']
             for key in keys: # ['45hn7-LXDX8']: #['sxCbrYjBsGA']:#
                 # load saved emb
-                if(au_emb is None):
+                if au_emb is None:
                     emb_val = self.test_embs[key]
                 else:
                     emb_val = au_emb[i]
@@ -181,13 +183,13 @@ class Audio2landmark_model():
                 seg_bs = 512
 
                 for j in range(0, inputs_fl.shape[0], seg_bs):
-
+                    print("Step 3: train for each segment ({} / {})".format(j, inputs_fl.shape[0]))
                     # Step 3.1: load segments
                     inputs_fl_segments = inputs_fl[j: j + seg_bs]
                     inputs_au_segments = inputs_au[j: j + seg_bs]
                     inputs_emb_segments = inputs_emb[j: j + seg_bs]
 
-                    if(inputs_fl_segments.shape[0] < 10):
+                    if inputs_fl_segments.shape[0] < 10:
                         continue
 
                     input_face_id = self.std_face_id
@@ -212,14 +214,14 @@ class Audio2landmark_model():
                 from scipy.signal import savgol_filter
                 fake_fls_np = savgol_filter(fake_fls_np, 5, 3, axis=0)
 
-                if(centerize_face):
+                if centerize_face:
                     std_m = np.mean(self.std_face_id.detach().cpu().numpy().reshape((1, 68, 3)),
                                     axis=1, keepdims=True)
                     fake_fls_np = fake_fls_np.reshape((-1, 68, 3))
                     fake_fls_np = fake_fls_np - np.mean(fake_fls_np, axis=1, keepdims=True) + std_m
                     fake_fls_np = fake_fls_np.reshape((-1, 68 * 3))
 
-                if(no_y_rotation):
+                if no_y_rotation:
                     std = self.std_face_id.detach().cpu().numpy().reshape(68, 3)
                     std_t_shape = std[self.t_shape_idx, :]
                     fake_fls_np = fake_fls_np.reshape((fake_fls_np.shape[0], 68, 3))
@@ -241,13 +243,14 @@ class Audio2landmark_model():
                     fake_fls_np = fake_fls_np.reshape((-1, 68 * 3))
 
                 filename = 'pred_fls_{}_{}.txt'.format(video_name.split('\\')[-1].split('/')[-1], key)
+                print(os.path.join(self.opt_parser.output_folder, filename))
                 np.savetxt(os.path.join(self.opt_parser.output_folder, filename), fake_fls_np, fmt='%.6f')
 
                 # ''' Visualize result in landmarks '''
-                if(vis_fls):
+                if vis_fls:
                     from util.vis import Vis
                     Vis(fls=fake_fls_np, filename=video_name.split('\\')[-1].split('/')[-1], fps=62.5,
-                        audio_filenam=os.path.join('examples', video_name.split('\\')[-1].split('/')[-1]+'.wav'))
+                        audio_filenam=os.path.join('input', video_name.split('\\')[-1].split('/')[-1]+'.wav'))
 
 
     def __close_face_lip__(self, fl):

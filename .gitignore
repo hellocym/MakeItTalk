@@ -1,0 +1,13 @@
+
+examples/ckpt/ckpt_116_i2i_comb.pth
+examples/ckpt/ckpt_autovc.pth
+examples/ckpt/ckpt_content_branch.pth
+examples/ckpt/ckpt_speaker_branch.pth
+examples/dump/emb.pickle
+*.iml
+*.xml
+*.iml
+*.xml
+*.pyc
+*.wav
+*.mp4
