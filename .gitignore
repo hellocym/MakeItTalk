@@ -11,3 +11,6 @@ examples/dump/emb.pickle
 *.pyc
 *.wav
 *.mp4
+*.iml
+.idea/MakeItTalk.iml
+.idea/misc.xml
